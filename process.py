@@ -63,139 +63,102 @@ def summarize_project(readme, code_snippets=""):
     except Exception as e:
         return f"Error generating summary: {str(e)}"
 
-def generate_pdf(projects):
-    """Generate a beautifully formatted PDF portfolio"""
+def generate_pdf(projects, user_name=None):
+    """Generate a beautifully formatted PDF portfolio, personalized with the user's name"""
     try:
         class PortfolioPDF(FPDF):
             def header(self):
-                # Add a header to each page
                 self.set_font('Arial', 'B', 20)
-                self.set_text_color(44, 62, 80)  # Dark blue
+                self.set_text_color(44, 62, 80)
                 self.cell(0, 15, 'GitHub Portfolio', 0, 1, 'C')
-                self.set_text_color(0, 0, 0)  # Reset to black
+                self.set_text_color(0, 0, 0)
                 self.ln(5)
-            
             def footer(self):
-                # Add page numbers
                 self.set_y(-15)
                 self.set_font('Arial', 'I', 8)
-                self.set_text_color(128, 128, 128)  # Gray
+                self.set_text_color(128, 128, 128)
                 self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
-                self.set_text_color(0, 0, 0)  # Reset to black
-            
+                self.set_text_color(0, 0, 0)
             def safe_cell(self, w, h, txt='', border=0, ln=0, align='', fill=False):
-                """Safe cell method that handles encoding"""
                 try:
                     cleaned_txt = clean_text_for_pdf(str(txt))
                     self.cell(w, h, cleaned_txt, border, ln, align, fill)
                 except:
-                    # Fallback for any remaining encoding issues
                     self.cell(w, h, '[Text encoding error]', border, ln, align, fill)
-            
             def safe_multi_cell(self, w, h, txt, border=0, align='J', fill=False):
-                """Safe multi_cell method that handles encoding"""
                 try:
                     cleaned_txt = clean_text_for_pdf(str(txt))
                     self.multi_cell(w, h, cleaned_txt, border, align, fill)
                 except:
-                    # Fallback for any remaining encoding issues
                     self.multi_cell(w, h, '[Text encoding error]', border, align, fill)
 
         pdf = PortfolioPDF()
         pdf.set_auto_page_break(auto=True, margin=20)
-        
-        # Add cover page
         pdf.add_page()
         pdf.ln(30)
-        
-        # Title
         pdf.set_font('Arial', 'B', 28)
-        pdf.set_text_color(44, 62, 80)  # Dark blue
+        pdf.set_text_color(44, 62, 80)
         pdf.safe_cell(0, 20, 'GitHub Portfolio', 0, 1, 'C')
-        
-        # Subtitle
         pdf.set_font('Arial', 'I', 16)
-        pdf.set_text_color(52, 73, 94)  # Lighter blue
+        pdf.set_text_color(52, 73, 94)
         pdf.safe_cell(0, 15, 'Project Showcase & Technical Summary', 0, 1, 'C')
-        
-        # Date
+        # Add user's name if provided
+        if user_name:
+            pdf.ln(10)
+            pdf.set_font('Arial', 'B', 18)
+            pdf.set_text_color(39, 174, 96)  # Green accent
+            pdf.safe_cell(0, 12, f'Prepared for: {user_name}', 0, 1, 'C')
         from datetime import datetime
         pdf.set_font('Arial', '', 12)
-        pdf.set_text_color(128, 128, 128)  # Gray
+        pdf.set_text_color(128, 128, 128)
         pdf.ln(20)
         pdf.safe_cell(0, 10, f'Generated on {datetime.now().strftime("%B %d, %Y")}', 0, 1, 'C')
-        
-        # Project count
         pdf.set_font('Arial', 'B', 14)
         pdf.set_text_color(44, 62, 80)
         pdf.ln(10)
         pdf.safe_cell(0, 10, f'Featuring {len(projects)} Projects', 0, 1, 'C')
-        
-        # Reset colors
         pdf.set_text_color(0, 0, 0)
-        
-        # Add projects
         for i, project in enumerate(projects, 1):
             pdf.add_page()
-            
-            # Project number and title
             pdf.set_font('Arial', 'B', 24)
-            pdf.set_text_color(231, 76, 60)  # Red accent
+            pdf.set_text_color(231, 76, 60)
             pdf.safe_cell(0, 15, f"Project {i}", 0, 1, 'L')
-            
             pdf.set_font('Arial', 'B', 20)
-            pdf.set_text_color(44, 62, 80)  # Dark blue
+            pdf.set_text_color(44, 62, 80)
             pdf.safe_cell(0, 12, project['title'], 0, 1, 'L')
-            
-            # Add a colored line under the title
-            pdf.set_fill_color(52, 152, 219)  # Blue
+            pdf.set_fill_color(52, 152, 219)
             pdf.rect(10, pdf.get_y(), 190, 1, 'F')
             pdf.ln(8)
-            
-            # Project summary with better formatting
             summary = clean_text_for_pdf(project['summary'])
-            
-            # Split summary into sections and format each differently
             sections = summary.split('**')
-            
-            pdf.set_text_color(0, 0, 0)  # Black text
-            
+            pdf.set_text_color(0, 0, 0)
             for j, section in enumerate(sections):
                 if not section.strip():
                     continue
-                    
-                if ':' in section and j % 2 == 1:  # This is a header
+                if ':' in section and j % 2 == 1:
                     pdf.set_font('Arial', 'B', 14)
-                    pdf.set_text_color(44, 62, 80)  # Dark blue
+                    pdf.set_text_color(44, 62, 80)
                     pdf.ln(3)
                     pdf.safe_cell(0, 8, section.strip(), 0, 1, 'L')
                     pdf.ln(2)
-                else:  # This is content
+                else:
                     pdf.set_font('Arial', '', 11)
-                    pdf.set_text_color(0, 0, 0)  # Black
-                    
-                    # Handle bullet points
+                    pdf.set_text_color(0, 0, 0)
                     lines = section.strip().split('\n')
                     for line in lines:
                         line = line.strip()
                         if line.startswith('*'):
                             pdf.set_font('Arial', '', 10)
-                            pdf.set_text_color(52, 73, 94)  # Darker gray
-                            # Add some indentation for bullet points
-                            pdf.cell(5, 6, '', 0, 0)  # Indent
+                            pdf.set_text_color(52, 73, 94)
+                            pdf.cell(5, 6, '', 0, 0)
                             pdf.safe_multi_cell(0, 6, line)
                         elif line:
                             pdf.set_font('Arial', '', 11)
                             pdf.set_text_color(0, 0, 0)
                             pdf.safe_multi_cell(0, 6, line)
                             pdf.ln(2)
-            
-            # Add some space before next project
             pdf.ln(5)
-        
-        # Generate the PDF
         pdf.output("GitHub_Portfolio.pdf")
         print("✨ Beautiful PDF portfolio generated successfully: GitHub_Portfolio.pdf")
-        
     except Exception as e:
         print(f"Error generating PDF: {str(e)}")

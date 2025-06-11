@@ -112,6 +112,12 @@ def main():
         print("This check prevents wasting money on LLM calls when PDF generation will fail.")
         return
     
+    # Prompt for user's name
+    user_name = input("Enter your name (as you want it to appear on the portfolio): ").strip()
+    if not user_name:
+        print("❌ Name cannot be empty. Exiting.")
+        return
+    
     try:
         print("\n🚀 Starting GitHub portfolio generation...")
         print("Fetching all your GitHub repositories...")
@@ -173,7 +179,7 @@ def main():
         
         if projects:
             print(f"📄 Generating final PDF portfolio...")
-            generate_pdf(projects)
+            generate_pdf(projects, user_name=user_name)
         else:
             print("❌ No projects were successfully processed.")
             
