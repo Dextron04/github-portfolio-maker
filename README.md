@@ -1,5 +1,8 @@
 # GitHub Portfolio Generator
 
+![ChatGPT Image Jun 11, 2025, 02_27_22 PM](https://github.com/user-attachments/assets/78f85b12-5303-4501-bbed-ad0e013596ba)
+
+
 🚀 **Automatically generate a beautiful PDF portfolio from your GitHub repositories using AI**
 
 Transform your GitHub repositories into a professional portfolio document with AI-generated summaries, beautiful formatting, and comprehensive project descriptions.
