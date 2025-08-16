@@ -225,3 +225,5 @@ Thumbs.db
 # Generated documentation
 docs/build/
 site/ 
+
+dexenv/

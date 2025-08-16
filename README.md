@@ -2,14 +2,13 @@
 
 ![ChatGPT Image Jun 11, 2025, 02_27_22 PM](https://github.com/user-attachments/assets/78f85b12-5303-4501-bbed-ad0e013596ba)
 
-
 🚀 **Automatically generate a beautiful PDF portfolio from your GitHub repositories using AI**
 
 Transform your GitHub repositories into a professional portfolio document with AI-generated summaries, beautiful formatting, and comprehensive project descriptions.
 
 ## ✨ Features
 
-- 🤖 **AI-Powered Summaries**: Uses OpenAI GPT-4 to create compelling project descriptions
+- 🤖 **AI-Powered Summaries**: Uses Anthropic Claude to create compelling project descriptions
 - 📄 **Beautiful PDF Generation**: Professional, multi-colored portfolio with modern design
 - 🔍 **Smart Repository Detection**: Automatically finds all your repositories with READMEs
 - 💰 **Cost-Efficient**: Pre-flight checks prevent wasted API calls
@@ -35,7 +34,7 @@ github-portfolio-maker/
 
 - **Python 3.7+**
 - **GitHub Personal Access Token**
-- **OpenAI API Key**
+- **Anthropic API Key**
 
 ## 🚀 Installation
 
@@ -60,12 +59,14 @@ github-portfolio-maker/
    touch .env.local
    ```
 
-   Add your API keys to `.env.local`:
+Add your API keys to `.env.local`:
 
-   ```
-   GITHUB_TOKEN=ghp_your_github_token_here
-   OPENAI_API_KEY=sk-your_openai_api_key_here
-   ```
+```
+GITHUB_TOKEN=ghp_your_github_token_here
+ANTHROPIC_API_KEY=sk-ant-your_anthropic_api_key_here
+# Optional: override model (defaults to claude-3-5-sonnet-latest)
+# CLAUDE_MODEL=claude-3-5-sonnet-latest
+```
 
 ## 🔑 Getting API Keys
 
@@ -76,9 +77,9 @@ github-portfolio-maker/
 3. Select scopes: `repo` (for private repos) or `public_repo` (for public only)
 4. Copy the generated token
 
-### OpenAI API Key
+### Anthropic API Key
 
-1. Visit [OpenAI API Keys](https://platform.openai.com/api-keys)
+1. Visit [Anthropic Console > API Keys](https://console.anthropic.com/)
 2. Create a new API key
 3. Copy the key (starts with `sk-`)
 
@@ -160,7 +161,7 @@ Your PDF portfolio will include:
 #### Missing Environment Variables
 
 ```
-❌ Error: Missing required environment variables: GITHUB_TOKEN, OPENAI_API_KEY
+❌ Error: Missing required environment variables: GITHUB_TOKEN, ANTHROPIC_API_KEY
 ```
 
 **Solution**: Create `.env.local` file with your API keys
@@ -181,23 +182,23 @@ Your PDF portfolio will include:
 
 **Solution**: Add README files to your repositories or check your GitHub token permissions
 
-#### OpenAI API Errors
+#### Anthropic API Errors
 
 ```
 Error generating summary: The api_key client option must be set
 ```
 
-**Solution**: Verify your `OPENAI_API_KEY` in `.env.local`
+**Solution**: Verify your `ANTHROPIC_API_KEY` in `.env.local`
 
 ### Rate Limits
 
 - **GitHub API**: 5,000 requests/hour (authenticated)
-- **OpenAI API**: Depends on your plan and model usage
+- **Anthropic API**: Depends on your plan and model usage
 
 ## 💰 Cost Considerations
 
 - **GitHub API**: Free (within rate limits)
-- **OpenAI API**: ~$0.01-0.03 per repository (GPT-4 pricing)
+- **Anthropic API**: Pricing depends on selected Claude model
 - **Example**: 10 repositories ≈ $0.10-0.30
 
 The script shows exactly how many API calls will be made and asks for confirmation.
@@ -231,7 +232,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **OpenAI** for GPT-4 API
+- **Anthropic** for Claude API
 - **GitHub** for repository API
 - **FPDF** for PDF generation
 - **python-dotenv** for environment management
