@@ -10,9 +10,91 @@ from dotenv import load_dotenv
 from main import get_user_repos, fetch_readme
 from process import generate_pdf, clean_text_for_pdf
 from fpdf import FPDF
+import re
 
 # Load environment variables from .env.local file
 load_dotenv('.env.local')
+
+def get_readme_preview(readme_content, max_lines=10):
+    """
+    Get a preview of the README content for manual review.
+    Returns a formatted preview string.
+    """
+    if not readme_content or readme_content in ["No README found", ""] or readme_content.startswith("Error fetching README"):
+        return "No README content available"
+    
+    lines = readme_content.split('\n')
+    preview_lines = lines[:max_lines]
+    
+    # Show basic stats
+    total_lines = len(lines)
+    total_chars = len(readme_content)
+    total_words = len(readme_content.split())
+    
+    preview = f"📊 README Stats: {total_chars} chars, {total_words} words, {total_lines} lines\n"
+    preview += "─" * 60 + "\n"
+    
+    for line in preview_lines:
+        # Truncate very long lines
+        if len(line) > 80:
+            line = line[:77] + "..."
+        preview += line + "\n"
+    
+    if total_lines > max_lines:
+        preview += f"... ({total_lines - max_lines} more lines)\n"
+    
+    preview += "─" * 60
+    
+    return preview
+
+def should_include_repository(repo, readme_content):
+    """
+    Ask user whether to include this repository in the portfolio.
+    Returns True if should include, False otherwise.
+    """
+    if not readme_content or readme_content in ["No README found", ""] or readme_content.startswith("Error fetching README"):
+        print(f"   ❌ No README found - automatically skipping")
+        return False
+    
+    repo_name = repo['name']
+    repo_desc = repo.get('description', 'No description')
+    repo_lang = repo.get('language', 'Unknown')
+    repo_stars = repo.get('stargazers_count', 0)
+    repo_private = repo.get('private', False)
+    
+    print(f"\n📁 Repository: {repo_name}")
+    print(f"   📝 Description: {repo_desc}")
+    print(f"   💻 Language: {repo_lang}")
+    print(f"   ⭐ Stars: {repo_stars}")
+    print(f"   🔒 Private: {repo_private}")
+    print()
+    
+    # Show README preview
+    preview = get_readme_preview(readme_content)
+    print("📄 README Preview:")
+    print(preview)
+    print()
+    
+    # Ask for user decision
+    while True:
+        response = input(f"Include '{repo_name}' in portfolio? (y/n/s=show more/q=quit): ").strip().lower()
+        
+        if response in ['y', 'yes']:
+            return True
+        elif response in ['n', 'no']:
+            return False
+        elif response in ['s', 'show', 'show more']:
+            # Show more of the README
+            print("\n📄 Full README Content:")
+            print("=" * 80)
+            print(readme_content)
+            print("=" * 80)
+            print()
+        elif response in ['q', 'quit']:
+            print("Exiting portfolio generation...")
+            exit(0)
+        else:
+            print("Please enter 'y' (yes), 'n' (no), 's' (show more), or 'q' (quit)")
 
 def test_pdf_creation():
     """Test PDF creation capabilities before making expensive LLM calls"""
@@ -125,6 +207,7 @@ def main():
     parser = argparse.ArgumentParser(description="GitHub Portfolio Generator")
     parser.add_argument("--no-llm", action="store_true", help="Generate summaries heuristically without calling the LLM")
     parser.add_argument("--name", type=str, default=None, help="Name to display on the portfolio cover (non-interactive)")
+    parser.add_argument("--auto-include-all", action="store_true", help="Automatically include all repositories with READMEs (skip manual selection)")
     args = parser.parse_args()
 
     # Check for required environment variables
@@ -159,27 +242,58 @@ def main():
         repos = get_user_repos()
         print(f"Found {len(repos)} repositories")
         
-        # Filter repositories with READMEs first (cheaper operation)
+        # Filter repositories with READMEs and manual selection
         repos_with_readme = []
-        print("\n📋 Checking repositories for READMEs...")
+        skipped_repos = []
+        print(f"\n📋 Found {len(repos)} repositories. Now checking for READMEs...")
+        
+        if args.auto_include_all:
+            print("🤖 Auto-include mode: Adding all repositories with READMEs")
+        else:
+            print("👤 Manual selection mode: You'll choose which repositories to include")
+        
+        print()
         
         for i, repo in enumerate(repos, 1):
             repo_name = repo['name']
-            print(f"Checking {i}/{len(repos)}: {repo_name}", end="")
+            print(f"📁 Checking {i}/{len(repos)}: {repo_name}", end="")
             
             # Use the actual repo owner to support org repos and fine-grained tokens
             readme = fetch_readme(repo_name, username=repo.get('owner', {}).get('login'))
+            
             if readme != "No README found" and not readme.startswith("Error fetching README"):
-                repos_with_readme.append((repo, readme))
-                print(" ✅")
+                print(" ✅ Has README")
+                
+                if args.auto_include_all:
+                    # Automatically include all repos with READMEs
+                    repos_with_readme.append((repo, readme))
+                    print(f"   🤖 Auto-included")
+                else:
+                    # Ask user for manual selection
+                    should_include = should_include_repository(repo, readme)
+                    
+                    if should_include:
+                        repos_with_readme.append((repo, readme))
+                        print(f"   ✅ Included by user")
+                    else:
+                        skipped_repos.append(repo_name)
+                        print(f"   ❌ Skipped by user")
             else:
-                print(f" ⚠️ ({readme})")
+                print(f" ❌ No README - {readme}")
+                skipped_repos.append(repo_name)
         
         if not repos_with_readme:
-            print("\n❌ No repositories with READMEs found. Nothing to generate.")
+            print("\n❌ No repositories selected for portfolio generation.")
+            if skipped_repos:
+                print(f"Skipped repositories: {', '.join(skipped_repos[:5])}")
+                if len(skipped_repos) > 5:
+                    print(f"... and {len(skipped_repos) - 5} more")
             return
         
-        print(f"\n💰 Found {len(repos_with_readme)} repositories with READMEs.")
+        print(f"\n💰 Selected {len(repos_with_readme)} repositories for processing.")
+        if skipped_repos:
+            print(f"🚫 Skipped {len(skipped_repos)} repositories")
+        
         if no_llm:
             print("Running in NO-LLM mode (heuristic summaries). No API cost.")
         else:
